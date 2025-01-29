@@ -1,0 +1,18 @@
+{
+  "TaxiTrainer": {
+    "name": "Taxi Trainer",
+    "author": "alwaysintreble",
+    "homepage": "https://github.com/alwaysintreble/TaxiTrainer",
+    "versions_url": "https://raw.githubusercontent.com/alwaysintreble/TaxiTrainer/refs/heads/versions/versions.json",
+    "icon_url": "",
+    "description": "Training tooling."
+  },
+  "TaxiAssetManager": {
+    "name": "Taxi Asset Manager",
+    "author": "alwaysintreble",
+    "homepage": "https://github.com/alwaysintreble/TaxiAssetManager/tree/master",
+    "versions_url": "https://raw.githubusercontent.com/alwaysintreble/TaxiAssetManager/refs/heads/versions/versions.json",
+    "icon_url": "",
+    "description": "Asset swapping mod"
+  },
+}
