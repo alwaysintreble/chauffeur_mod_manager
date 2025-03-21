@@ -1,7 +1,9 @@
+import hashlib
 import logging
 import os
 import subprocess
 import sys
+import urllib.request
 from typing import Any, Iterable, NamedTuple
 
 import requests
@@ -85,7 +87,7 @@ def open_filename(title: str, filetypes: Iterable[tuple[str, Iterable[str]]], su
             # on macOS, mixing kivy and tk does not work, so spawn a new process
             # FIXME: performance of this is pretty bad, and we should (also) look into alternatives
             from multiprocessing import Process, Queue
-            res: "Queue[typing.Optional[str]]" = Queue()
+            res: "Queue[str | None]" = Queue()
             Process(target=_mp_open_filename, args=(res, title, filetypes, suggest)).start()
             return res.get()
         try:
@@ -108,22 +110,51 @@ def request_data(request_url: str) -> Any:
     return data
 
 
-# def get_available_mods() -> dict[str, str]:
-#     """Get available mods from repo manifest. Returned as [name, url]"""
-    
+def get_available_mods() -> dict[str, dict[str, str]]:
+    """Get available mods from repo manifest. Returned as [name, url]"""
+    available_mods_url = "https://raw.githubusercontent.com/alwaysintreble/chauffeur_mod_manager/refs/heads/modlist/available-mods.json"
+    private_mod_url = "https://raw.githubusercontent.com/alwaysintreble/chauffeur_mod_manager/refs/heads/modlist/available-mods.json?token=GHSAT0AAAAAACFDYBQQOZA3MZI7E7QXQSNIZ42SBUQ"
+    data = request_data(available_mods_url)
+    for mod in get_installed_mods():
+        if mod in data:
+            try:
+                latest_mod_version_data = request_data(data[mod]["versions_url"])["versions"][0]
+                if available_mod_update(mod, latest_mod_version_data["mod_version"]):
+                    with urllib.request.urlopen(latest_mod_version_data["download_url"]) as download:
+                        from zipfile import ZipFile
+                        sha256_hash = hashlib.sha256()
+                        with open(download, "rb") as f:
+                            for byte_block in iter(lambda: f.read(4096), b""):
+                                sha256_hash.update(byte_block)
+                            if not sha256_hash.hexdigest() == latest_mod_version_data["sha256"]:
+                                raise ValueError("hash of file does not match")
+                        with ZipFile(download, "r") as zip_file:
+                            for member in zip_file.infolist():
+                                from src.config import config_data
+                                zip_file.extract(member, path=os.path.join(config_data.game_path, "BepInEx", "plugins"))
+            except ValueError:
+                raise ValueError(f"Unable to update mod {mod}! Hash for download does not match manifest.")
+    return data
 
 
-def available_mod_update(mod_name: str, latest_version: str) -> bool:
-    """Check if there's an available update for this mod"""
+def get_installed_mod_version(mod_name: str) -> str:
     from win32api import GetFileVersionInfo, LOWORD, HIWORD
     from config import config_data
-    latest_version = latest_version.lstrip("v")
+
     installed_version_info = GetFileVersionInfo(
         os.path.join(config_data.game_path, "BepInEx", "plugins", f"{mod_name}", f"{mod_name}.dll"), "\\")
     ms = installed_version_info["FileVersionMS"]
     ls = installed_version_info["FileVersionLS"]
     version = (HIWORD(ms), LOWORD(ms), HIWORD(ls))
     installed_version = ".".join(str(i) for i in version)
+
+    return installed_version
+
+
+def available_mod_update(mod_name: str, latest_version: str) -> bool:
+    """Check if there's an available update for this mod"""
+    latest_version = latest_version.lstrip("v")
+    installed_version = get_installed_mod_version(mod_name)
 
     logging.info(f"Installed version: {installed_version}. Latest version: {latest_version}")
     return tuplize_version(latest_version) > tuplize_version(installed_version)
