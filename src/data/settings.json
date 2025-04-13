@@ -1,0 +1,9 @@
+[
+  {
+    "type": "path",
+    "title": "Game Path",
+    "desc": "Path to the game executable.",
+    "section": "configuration",
+    "key": "path"
+  }
+]

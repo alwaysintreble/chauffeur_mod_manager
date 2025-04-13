@@ -1,0 +1,161 @@
+<ChauffeurNavigationItem>
+    direction: "right"
+    on_press:
+        app.root.ids.screen_manager.transition.direction = self.direction
+        app.root.ids.screen_manager.current = self.text
+
+    MDNavigationItemIcon:
+        icon: root.icon
+    MDNavigationItemLabel:
+        text: root.text
+
+<ChauffeurSnackbar>
+    orientation: "horizontal"
+    pos_hint: {"center_x": 0.5, "center_y": 0.2}
+    size_hint: {0.4, 0.1}
+    background_color: app.theme_cls.errorColor
+    duration: 5
+
+    MDSnackbarText:
+        text: root.text
+
+    MDSnackbarActionButton:
+        pos_hint: {"center_y": 0.5}
+        on_release: app.engage_snack(root.action_text)
+
+        MDSnackbarActionButtonText:
+            text: root.action_text
+
+    MDSnackbarCloseButton:
+        pos_hint: {"center_y": 0.5}
+        icon: "close"
+        on_release: root.dismiss()
+
+<ChauffeurScreen>
+    layout: layout
+
+    MDScrollView:
+        id: scroll
+        bar_width: "12dp"
+        scroll_wheel_distance: 40
+        do_scroll_x: False
+        scroll_type: ["bars", "content"]
+        size_hint_y: 0.95
+        canvas.before:
+            Color:
+                rgba: app.theme_cls.backgroundColor
+
+        MDBoxLayout:
+            id: layout
+            orientation: "vertical"
+            spacing: 10
+            size_hint_y: None
+            height: self.minimum_height
+
+
+<ModCardLayout>:
+    MDIcon:
+        icon: root.icon
+        pos_hint: {"center_x": 0.1, "center_y": 0.5}
+
+    MDLabel:
+        text: root.text
+        pos_hint: {"center_x": 0.5, "center_y": 0.75}
+        halign: "center"
+        font_style: "Title"
+        role: "medium"
+
+    MDLabel:
+        text: root.description
+        pos_hint: {"center_x": 0.5, "center_y": 0.35}
+        halign: "center"
+        role: "small"
+
+<InstalledModCardLayout@ModCardLayout>:
+
+<RemoteModCardLayout@ModCardLayout>:
+    MDButton:
+        style: "filled"
+        pos_hint: {"center_x": 0.85, "center_y": 0.5}
+        md_bg_color: app.theme_cls.backgroundColor
+        on_release: app.download_mod(root)
+
+        MDButtonIcon:
+            icon: "download"
+        MDButtonText:
+            text: "Download Mod"
+
+<ModCard>
+    style: "filled"
+    padding: "4dp"
+    size_hint: 1, None
+    height: "75dp"
+
+<InstalledModCard>
+    InstalledModCardLayout:
+        text: root.text
+        description: root.description
+        icon: root.icon
+
+
+<RemoteModCard>
+    RemoteModCardLayout:
+        text: root.text
+        description: root.description
+        icon: root.icon
+
+
+MDBoxLayout:
+    id: top_screen
+    orientation: "vertical"
+
+    MDRelativeLayout:
+        size_hint: 1, 0.1
+
+        MDButton:
+            id: launch
+            style: "filled"
+            pos_hint: {"left": 1, "top": 0.7}
+            on_release: app.launch_game(self)
+
+            MDButtonIcon:
+                icon: "play"
+
+            MDButtonText:
+                text: "Launch Game"
+
+        MDButton:
+            pos_hint: {"right": 1, "top": 0.7}
+            id: settings
+            on_release: app.open_settings()
+
+            MDButtonIcon:
+                icon: "wrench"
+
+            MDButtonText:
+                text: "Settings"
+
+    ScreenManager:
+        id: screen_manager
+        pos_hint: {"center_x": 0.5}
+
+        ChauffeurScreen:
+            id: install
+            name: "Installed Mods"
+
+        ChauffeurScreen:
+            id: explore
+            name: "Explore Mods"
+
+    MDNavigationBar:
+        id: navigation
+
+        ChauffeurNavigationItem:
+            icon: "controller"
+            text: "Installed Mods"
+            active: True
+
+        ChauffeurNavigationItem:
+            text: "Explore Mods"
+            icon: "desktop-classic"
+            direction: "left"
