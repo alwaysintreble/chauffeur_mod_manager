@@ -1,4 +1,3 @@
-import hashlib
 import io
 import logging
 import mimetypes
@@ -8,13 +7,12 @@ import subprocess
 import sys
 import urllib.request
 import zipfile
-from typing import Any, Iterable, NamedTuple
+from typing import Any, NamedTuple
 from zipfile import ZipFile
 
 import requests
 
-
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 is_linux = sys.platform.startswith("linux")
 is_macos = sys.platform == "darwin"

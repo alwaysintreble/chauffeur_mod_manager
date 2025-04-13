@@ -1,29 +1,27 @@
 from __future__ import annotations
 
 import os.path
-import subprocess
 from typing import Any, NamedTuple
 
 from kivy.lang import Builder
 from kivy.properties import ConfigParser, ObjectProperty, StringProperty
-from kivy.uix.settings import SettingsWithNoMenu, SettingsWithSidebar, SettingsWithSpinner, SettingsWithTabbedPanel
+from kivy.uix.settings import SettingsWithSpinner
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.button import MDButton, MDButtonText
+from kivymd.uix.button import MDButton
 from kivymd.uix.card import MDCard
 from kivymd.uix.navigationbar import MDNavigationItem
 from kivymd.uix.relativelayout import MDRelativeLayout
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.snackbar import (
     MDSnackbar, MDSnackbarActionButton, MDSnackbarActionButtonText,
-    MDSnackbarButtonContainer, MDSnackbarCloseButton, MDSnackbarSupportingText, MDSnackbarText,
+    MDSnackbarButtonContainer, MDSnackbarText,
 )
 
-from src.config import validate_file_path
-from src.utils import (
+from config import validate_file_path
+from utils import (
     chauffeur_installed, get_available_mods, get_installed_mod_version, get_installed_mods, get_remote_mod_version,
-    install_bepin, install_mod, is_windows, open_file,
-    tuplize_version,
+    install_bepin, install_mod, is_windows, tuplize_version,
 )
 from utils import __version__, local_path
 
@@ -89,6 +87,7 @@ class ChauffeurApp(ThemedApp):
     installed_mods: list[ModEntry]
     available_mods: list[ModEntry]
     game_path: str
+    chauffeur_snack: MDSnackbar
 
     def build(self):
         self.top_screen = Builder.load_file(local_path("data", "manager.kv"))
@@ -112,6 +111,7 @@ class ChauffeurApp(ThemedApp):
 
     def on_config_change(self, config: ConfigParser, section: str, key: str, value: Any) -> None:
         if key == "path":
+            self.game_path = value
             if not validate_file_path(value):
                 ChauffeurSnackbar(
                     text="Invalid path. Make sure to select the game executable.",
@@ -137,12 +137,12 @@ class ChauffeurApp(ThemedApp):
 
     def check_mods(self) -> bool:
         if not chauffeur_installed(os.path.dirname(self.game_path)):
-            MDSnackbar(
+            self.chauffeur_snack = MDSnackbar(
                 MDSnackbarText(text="Chauffeur not installed.", pos_hint={"center_y": 0.5}),
                 MDSnackbarButtonContainer(
                     MDSnackbarActionButton(
                         MDSnackbarActionButtonText(text="Install"),
-                        on_release=self.engage_snack("Install")
+                        on_release=lambda *args: self.engage_snack("Install")
                     ),
                     pos_hint={"center_y": 0.5},
                 ),
@@ -152,7 +152,8 @@ class ChauffeurApp(ThemedApp):
                 background_color=self.theme_cls.errorColor,
                 auto_dismiss=False,
                 duration=300,
-            ).open()
+            )
+            self.chauffeur_snack.open()
             return False
         if self.installed_mods or self.available_mods:
             self.installed_mods_layout.clear_widgets()
@@ -232,15 +233,19 @@ class ChauffeurApp(ThemedApp):
             mod_entry.download_url,
             mod_entry.sha256,
         )
+        self.create_alert(f"{mod_entry.name} installed!")
+        self.installed_mods.append(mod_entry)
+        self.available_mods.remove(mod_entry)
+        self.check_mods()
+
+    def create_alert(self, text: str) -> None:
         MDSnackbar(
-            MDSnackbarText(text=f"{mod_entry.name} installed!", pos_hint={"center_x": 0.5, "center_y": 0.5}),
+            MDSnackbarText(text=text, pos_hint={"center_x": 0.5, "center_y": 0.5}),
             pos_hint={"center_x": 0.5, "center_y": 0.2},
             size_hint={0.26, None},
             background_color=self.theme_cls.errorColor,
         ).open()
-        self.installed_mods.append(mod_entry)
-        self.available_mods.remove(mod_entry)
-        self.check_mods()
+
 
     def on_start(self):
         self.game_path = self.config.get("configuration", "path")
@@ -264,6 +269,9 @@ class ChauffeurApp(ThemedApp):
             "Chauffeur",
             "https://github.com/alwaysintreble/Chauffeur/releases/download/v0.2.0/Chauffeur.dll",
             )
+        if self.chauffeur_snack:
+            self.chauffeur_snack.dismiss()
+            self.create_alert("Chauffeur installed!")
         self.check_mods()
 
 class ModEntry(NamedTuple):
@@ -300,5 +308,3 @@ def create_mod_entry(
         latest_version["sha256"],
         changelog,
     )
-
-ChauffeurApp().run()
