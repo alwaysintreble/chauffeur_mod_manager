@@ -103,7 +103,12 @@ class ChauffeurApp(ThemedApp):
         return self.top_screen
 
     def build_config(self, config: ConfigParser) -> None:
-        config.setdefaults("configuration", {"path": local_path()})
+        config = ConfigParser("Chauffeur")
+        config.read(local_path("data", "chauffeur.ini"))
+        if config.get("configuration", "path") == '""':
+            config.set("configuration", "path", local_path())
+            config.write()
+        self.config = config
 
     def build_settings(self, settings: SettingsWithSpinner):
         settings.add_json_panel("Chauffeur Settings", self.config, local_path("data", "settings.json"))
@@ -119,7 +124,6 @@ class ChauffeurApp(ThemedApp):
                 ).open()
             else:
                 self.check_mods()
-        print(type(value))
         pass
 
     def engage_snack(self, snack_action: str) -> None:
@@ -248,6 +252,7 @@ class ChauffeurApp(ThemedApp):
 
 
     def on_start(self):
+        self.config.filename = local_path("data", "chauffeur.ini")
         self.game_path = self.config.get("configuration", "path")
         if validate_file_path(self.game_path):
             self.check_mods()
